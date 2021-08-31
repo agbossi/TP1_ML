@@ -10,7 +10,8 @@ def get_max_class(arg, class_value, arg_max, classification):
         return class_value
 
 
-class CategoricalNaiveBayes:
+# TODO: ajustar con correccion de laplace
+class DiscreteNaiveBayes:
 
     LIKES = 1
     DISLIKES = 0
@@ -29,34 +30,38 @@ class CategoricalNaiveBayes:
     def P(self, class_value):
         return self.classes_frequencies[class_value] / self.data_count
 
-    def calculate_total_probability(self):
+    def calculate_total_probability(self, test_elem):
+        accum = 0
         for class_value in self.classes_frequencies:
+            prod = 1
             for i in range(len(self.attribute_names) - 1):
-                prod = 1
                 curr_attr = self.attribute_names[i]
-                for attribute_value in self.cond_probabilities[class_value][curr_attr]:
-                    prod *= self.cond_P(curr_attr, attribute_value, given=class_value)
-        return 0
+                prod *= self.cond_P(attribute=curr_attr, value=test_elem[i], given=class_value)
+            prod *= self.classes_frequencies[class_value]
+            accum += prod
+        return accum
 
     def train(self, training_set):
         self.training_set = training_set
+        # store columns for easier counting and access
+        self.attribute_names = self.training_set.columns
         # classes frequencies to dict obtained from classes column
-        self.classes_frequencies = training_set[:, -1:].value_counts().to_dict()
+        self.classes_frequencies = training_set[self.attribute_names[-1]].value_counts().to_dict()
         self.classes = len(self.classes_frequencies)
         # to divide later to get probabilities
         self.data_count = len(training_set.index)
-        # store columns for easier counting
-        self.attribute_names = self.training_set.columns()
         self.cond_probabilities = self.calculate_cond_table()
+        print(self.cond_probabilities)
+        print('frequencies')
+        print(self.classes_frequencies)
 
     def test(self, test_set):
-        # TODO valores de probabilidad total estan como el orto
-        total_probability_values = self.calculate_total_probability()
         results = {}
         for i in range(len(test_set)):
             arg_max = 0
             classification = None
             probabilities = {}
+            total_probability_values = self.calculate_total_probability(test_set[i])
             for class_value in self.classes_frequencies:
                 prod = 1
                 for j in range(len(self.attribute_names) - 1):
@@ -81,11 +86,11 @@ class CategoricalNaiveBayes:
             for i in range(len(self.attribute_names) - 1):
                 curr_attr = self.attribute_names[i]
                 # get attribute column and class column
-                attribute_set = self.training_set.loc[:, [curr_attr, self.attribute_names[-1]]]
+                attribute_set = self.training_set[[curr_attr, self.attribute_names[-1]]]
                 # keep rows with class_value as class
                 class_attribute_set = attribute_set[(attribute_set[self.attribute_names[-1]] == class_value)]
                 # count excluding na
-                frequencies = class_attribute_set.value_counts(dropna=True).to_dict()
+                frequencies = class_attribute_set[curr_attr].value_counts(dropna=True).to_dict() # esto devuelve valor - cantidad (ej: 1: 7)
                 # divide for ammount to get probability
                 probabilities = {k: v / len(class_attribute_set) for k, v in frequencies.items()}
                 # store values for that attribute and class
