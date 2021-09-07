@@ -1,20 +1,22 @@
 import numpy as np
+from sklearn.utils import shuffle
 
-# TODO releer para recordar como funciona y buscar teorica de como usarlo
 # returns a list with one training set and one testing set
 
 
 def train_test_split(data_set, training_percent):
     sets = []
+    data_set = shuffle(data_set)
 
-    training_set = data_set[0:int(len(data_set) * training_percent), :]
-    testing_set = data_set[int(len(data_set) * training_percent):len(data_set), :]
+    training_set = data_set.iloc[0:int(len(data_set) * training_percent), :]
+    testing_set = data_set.iloc[int(len(data_set) * training_percent):len(data_set), :]
 
     element_set = [training_set, testing_set]
     sets.append(element_set)
     return sets
 
 
+# TODO: llevar los folds devuelta a pandas
 def cross_validation_split(k, data_set):
     if k == 1:
         return train_test_split(data_set, 0.5)  # if K=1 safe by splitting halfway
@@ -36,8 +38,8 @@ def cross_validation_split(k, data_set):
             # con esto hacemos la diagonal que hay en el PPT haciendo que saltea el de la diagonal pq
             # sera el de testeo y el resto sera training en cada iter
             if i != j:
-                training_set = np.concatenate((training_set, data_set[j*fold_size:(j+1)*fold_size, :]), 0) #aca agarro el de entrenamiento
-        fold = [training_set[1:, :], data_set[i*fold_size:(i+1)*fold_size, :]] #aca agarro el de testeo q estaria en i=j
+                training_set = np.concatenate((training_set, data_set.iloc[j*fold_size:(j+1)*fold_size, :]), 0) #aca agarro el de entrenamiento
+        fold = [training_set[1:, :], data_set.iloc[i*fold_size:(i+1)*fold_size, :]] #aca agarro el de testeo q estaria en i=j
         fold_set.append(fold)
 
     # now we have to add any removed elements if data_set len / K had remainder
@@ -46,9 +48,8 @@ def cross_validation_split(k, data_set):
         for i in range(k):
             # agrego en la posicion 0 el elemento data_set[aux_data_set_len+i]
             selected_split = fold_set[i][0]
-            to_concat = np.array([data_set[aux_data_set_len+i, :].tolist()])
+            to_concat = np.array([data_set.iloc[aux_data_set_len+i, :].tolist()])
             fold_set[i][0] = np.concatenate((selected_split, to_concat), 0)
-            # fold_set[i][0] = np.concatenate(fold_set[i][0], data_set[aux_data_set_len+i, :], 0)
             # si number_of_elements_to_add == i significa que ya agregue todos los extra, hacer break
             if aux_data_set_len+i == len(data_set)-1:
                 break
