@@ -3,17 +3,6 @@ import pandas as pd
 from src import NaiveBayes
 from src.Data_resamplers import train_test_split
 
-
-def get_classification(classified_element):
-    max_v = 0
-    classification = None
-    for k, v in classified_element.items():
-        if max_v < v:
-            classification = k
-            max_v = v
-    return classification
-
-
 path = os.path.abspath('../../Data/PreferenciasBritanicos(1).xlsx')
 df = pd.read_excel(path)
 

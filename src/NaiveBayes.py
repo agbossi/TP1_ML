@@ -7,6 +7,7 @@ import nltk
 # Nos estamos bajando diccionarios que mapean palabras a sus versiones normalizadas
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
+
 nltk.download('stopwords')
 nltk.download('wordnet')
 nltk.download('punkt')
@@ -14,6 +15,41 @@ nltk.download('punkt')
 
 def laplace_correction(occurrences, total, possible_values):
     return (occurrences + 1) / (total + possible_values)
+
+
+def check_parts(parts):
+    if len(parts) > 1:
+        for part in parts:
+            if not part.isnumeric():
+                return False
+        return True
+    else:
+        return False
+
+
+def is_numeric(var):
+    if var.isnumeric():
+        return True
+    is_big_num = check_parts(var.split('.'))
+    if is_big_num:
+        return True
+    is_small_num = check_parts(var.split(','))
+    if is_small_num:
+        return True
+    is_date_or_something = check_parts(var.split('/'))
+    if is_date_or_something:
+        return True
+    return False
+
+
+def get_classification(classified_element):
+    max_v = 0
+    classification = None
+    for k, v in classified_element.items():
+        if max_v < v:
+            classification = k
+            max_v = v
+    return classification
 
 
 class DiscreteNaiveBayes:
@@ -143,6 +179,7 @@ class TextNaiveBayes:
         self.text_column = None
         self.class_column = None
         self.words_amount_per_class = None
+        self.blacklist = None
         self.lemmatizer = WordNetLemmatizer()
 
     def cond_P(self, value, given):
@@ -169,11 +206,14 @@ class TextNaiveBayes:
         return accum
 
     # expects dataframe with 2 columns. text and class
-    def train(self, training_set):
+    def train(self, training_set, blacklist):
+        self.training_set = training_set
         self.class_column = training_set.columns[-1]
         self.text_column = training_set.columns[0]
         # to divide later to get probabilities
         self.data_count = len(training_set.index)
+        # words that appear to few in dataset
+        self.blacklist = blacklist
         # classes frequencies to dict obtained from classes column
         classes_frequencies = training_set[self.class_column].value_counts().to_dict()
         self.classes_probabilities = {k: laplace_correction(v, self.data_count, len(classes_frequencies)) for k, v in classes_frequencies.items()}
@@ -182,6 +222,9 @@ class TextNaiveBayes:
         # just initialized the structure
         self.words_amount_per_class = {k: 0 for k in self.classes_probabilities}
         self.cond_frequencies = self.calculate_cond_table()
+
+        ret = self.get_train_results()
+        return ret
 
     def test(self, test_set):
         results = {}
@@ -212,7 +255,7 @@ class TextNaiveBayes:
 
     def filter_words(self, df):
         class_dictionary = {}
-        for i in range(df.index):
+        for i in range(len(df.index)):
             filtered_words = self.filter_title(title=df.iloc[i, 0])
             self.aggregate(words=filtered_words, class_value=df.iloc[i, 1], class_dictionary=class_dictionary,)
         return class_dictionary
@@ -229,11 +272,21 @@ class TextNaiveBayes:
         words = title.split()
         ret = []
         for word in words:
-            stripped_word = word.strip(",.?¡¿!\'\"()[]{}-+%#$/:;_")
-            if not stripped_word.isnumeric():
+            stripped_word = word.strip(",\a.?¡\\¦.¿!â\'\"°()\r[]\'{}\t-+%\a#\"$/:;_")
+            if not is_numeric(stripped_word):
                 stripped_word = stripped_word.lower()
                 lem = self.lemmatizer.lemmatize(word=stripped_word, pos='v')
-                if lem not in stopwords.words('spanish'):
+                if lem not in stopwords.words('spanish') and lem not in self.blacklist:
                     ret.append(lem)
         return ret
 
+    def get_train_results(self):
+        probabilities = {}
+        for class_value, class_dict in self.cond_frequencies.items():
+            class_probabilities = {}
+            for word, ocurr in class_dict.items():
+                class_probabilities[word] = laplace_correction(ocurr,
+                                                               self.words_amount_per_class[class_value],
+                                                               len(class_dict))
+            probabilities[class_value] = class_probabilities
+        return probabilities
