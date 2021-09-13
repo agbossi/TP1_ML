@@ -108,3 +108,8 @@ def replace_by_most_frequent(data_frame, fields):
         data_frame[field] = data_frame[field].fillna(frequencies.keys()[0])
     return data_frame
 
+
+def calculate_stats(df, column):
+    mean = df[column].mean()
+    std = df[column].std()
+    return [mean, std]

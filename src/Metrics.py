@@ -7,8 +7,9 @@ SKIP_LABEL_INDEX = 1
 class MatrixComponents(enum.Enum):
     true_positive = 0
     false_positive = 1
-    true_negative = 2
-    false_negative = 3
+    false_negative = 2
+    true_negative = 3
+
 
 
 # TODO plot heatmap
@@ -34,25 +35,25 @@ class ConfusionMatrix:
                     stats_matrix[k][MatrixComponents.false_positive.value] += self.matrix[l][k]
                     stats_matrix[k][MatrixComponents.false_negative.value] += self.matrix[k][l]
                     curr_classification_amount += (self.matrix[k][l] + self.matrix[l][k] + self.matrix[k][k])
-            stats_matrix[k][MatrixComponents.false_negative.value] += curr_classification_amount \
+            stats_matrix[k][MatrixComponents.true_negative.value] += curr_classification_amount \
                                                                       - stats_matrix[k][
                                                                           MatrixComponents.true_positive.value] \
                                                                       - stats_matrix[k][
                                                                           MatrixComponents.false_positive.value] \
                                                                       - stats_matrix[k][
                                                                           MatrixComponents.false_negative.value]
-            stats_matrix[k].insert(0, self.classifications[k].name)
-        stats_matrix.insert(0, [" ", "TP", "FP", "TN", "FN"])
+        #    stats_matrix[k].insert(0, self.classifications[k].name)
+        # stats_matrix.insert(0, [" ", "TP", "FP", "TN", "FN"])
         self.stats_matrix = stats_matrix
         return stats_matrix
 
     def print_confusion_matrix(self):
-        header = []
-        for k in range(len(self.classifications)):
-            self.matrix[k].insert(0, self.classifications[k].name)
-            header.append(self.classifications[k].name)
-        header.insert(0, " ")
-        self.matrix.insert(0, header)
+        # header = []
+        # for k in range(len(self.classifications)):
+        #    self.matrix[k].insert(0, self.classifications[k].name)
+        #    header.append(self.classifications[k].name)
+        # header.insert(0, " ")
+        # self.matrix.insert(0, header)
         print_m(self.matrix)
 
     def print_summary(self):
@@ -63,23 +64,23 @@ class ConfusionMatrix:
         if self.stats_matrix is None:
             self.summarize()
             for i in range(len(self.classifications)):
-                precision = [self.classifications[i].name, self.get_precision(i + SKIP_LABEL_INDEX)]  # paso la linea con texto
+                precision = [self.classifications[i], self.get_precision(i)]  # paso la linea con texto
                 precisions.append(precision)
         return precisions
 
     def get_accuracy(self, index):
-        if self.stats_matrix[index][SKIP_LABEL_INDEX + MatrixComponents.true_positive.value] + self.stats_matrix[index][
-            SKIP_LABEL_INDEX + MatrixComponents.true_negative.value]\
-                + self.stats_matrix[index][SKIP_LABEL_INDEX + MatrixComponents.false_negative.value]\
-                + self.stats_matrix[index][SKIP_LABEL_INDEX + MatrixComponents.false_positive.value] == 0:
+        if self.stats_matrix[index][MatrixComponents.true_positive.value] + self.stats_matrix[index][
+            MatrixComponents.true_negative.value]\
+                + self.stats_matrix[index][MatrixComponents.false_negative.value]\
+                + self.stats_matrix[index][MatrixComponents.false_positive.value] == 0:
             accuracy = 0
         else:
-            accuracy = ((self.stats_matrix[index][SKIP_LABEL_INDEX + MatrixComponents.true_positive.value]
-                          + self.stats_matrix[index][SKIP_LABEL_INDEX + MatrixComponents.true_negative.value])
-                         / (self.stats_matrix[index][SKIP_LABEL_INDEX + MatrixComponents.true_positive.value] +
-                            self.stats_matrix[index][SKIP_LABEL_INDEX + MatrixComponents.true_negative.value] +
-                            self.stats_matrix[index][SKIP_LABEL_INDEX + MatrixComponents.false_negative.value] +
-                            self.stats_matrix[index][SKIP_LABEL_INDEX + MatrixComponents.false_positive.value]))
+            accuracy = ((self.stats_matrix[index][MatrixComponents.true_positive.value]
+                          + self.stats_matrix[index][MatrixComponents.true_negative.value])
+                         / (self.stats_matrix[index][MatrixComponents.true_positive.value] +
+                            self.stats_matrix[index][MatrixComponents.true_negative.value] +
+                            self.stats_matrix[index][MatrixComponents.false_negative.value] +
+                            self.stats_matrix[index][MatrixComponents.false_positive.value]))
         return accuracy
 
     def get_accuracies(self):
@@ -87,13 +88,13 @@ class ConfusionMatrix:
             self.summarize()
         accuracies = []
         for i in range(len(self.classifications)):
-            accuracy = [self.classifications[i].name, self.get_accuracy(i + SKIP_LABEL_INDEX)]  # paso la linea con texto
+            accuracy = [self.classifications[i], self.get_accuracy(i)]  # paso la linea con texto
             accuracies.append(accuracy)
         return accuracies
 
     def get_precision(self, index):
-        if self.stats_matrix[index][SKIP_LABEL_INDEX + MatrixComponents.true_positive.value] \
-                + self.stats_matrix[index][SKIP_LABEL_INDEX + MatrixComponents.false_positive.value] == 0:
+        if self.stats_matrix[index][MatrixComponents.true_positive.value] \
+                + self.stats_matrix[index][MatrixComponents.false_positive.value] == 0:
             precision = 0
         else:
             precision = self.stats_matrix[index][1 + MatrixComponents.true_positive.value] \
@@ -106,18 +107,18 @@ class ConfusionMatrix:
             self.summarize()
         recalls = []
         for i in range(len(self.classifications)):
-            recall = [self.classifications[i].name, self.get_recall(i + SKIP_LABEL_INDEX)]  # paso la linea con texto
+            recall = [self.classifications[i], self.get_recall(i)]  # paso la linea con texto
             recalls.append(recall)
         return recalls
 
     def get_recall(self, index):
-        if self.stats_matrix[index][SKIP_LABEL_INDEX + MatrixComponents.true_positive.value] \
-                + self.stats_matrix[index][SKIP_LABEL_INDEX + MatrixComponents.false_negative.value] == 0:
+        if self.stats_matrix[index][MatrixComponents.true_positive.value] \
+                + self.stats_matrix[index][MatrixComponents.false_negative.value] == 0:
             recall = 0
         else:
-            recall = self.stats_matrix[index][SKIP_LABEL_INDEX + MatrixComponents.true_positive.value] \
-                     / (self.stats_matrix[index][SKIP_LABEL_INDEX + MatrixComponents.true_positive.value]
-                        + self.stats_matrix[index][SKIP_LABEL_INDEX + MatrixComponents.false_negative.value])
+            recall = self.stats_matrix[index][MatrixComponents.true_positive.value] \
+                     / (self.stats_matrix[index][MatrixComponents.true_positive.value]
+                        + self.stats_matrix[index][MatrixComponents.false_negative.value])
         return recall
 
     def get_f1_scores(self):
@@ -125,7 +126,7 @@ class ConfusionMatrix:
             self.summarize()
         f1_scores = []
         for i in range(len(self.classifications)):
-            f1_score = [self.classifications[i].name, self.get_f1_score(i + SKIP_LABEL_INDEX)]  # paso la linea con texto
+            f1_score = [self.classifications[i], self.get_f1_score(i)]  # paso la linea con texto
             f1_scores.append(f1_score)
         return f1_scores
 
@@ -142,18 +143,18 @@ class ConfusionMatrix:
             self.summarize()
         fp_rates = []
         for i in range(len(self.classifications)):
-            fp_rate = [self.classifications[i].name, self.get_fp_rate(i + SKIP_LABEL_INDEX)]
+            fp_rate = [self.classifications[i], self.get_fp_rate(i)]
             fp_rates.append(fp_rate)
         return fp_rates
 
     def get_fp_rate(self, index):
-        if self.stats_matrix[index][SKIP_LABEL_INDEX + MatrixComponents.false_positive.value] \
-            + self.stats_matrix[index][SKIP_LABEL_INDEX + MatrixComponents.true_negative.value] == 0:
+        if self.stats_matrix[index][MatrixComponents.false_positive.value] \
+            + self.stats_matrix[index][MatrixComponents.true_negative.value] == 0:
             tp_rate = 0
         else:
-            tp_rate = self.stats_matrix[index][SKIP_LABEL_INDEX + MatrixComponents.false_positive.value] \
-            / (self.stats_matrix[index][SKIP_LABEL_INDEX + MatrixComponents.false_positive.value]
-            + self.stats_matrix[index][SKIP_LABEL_INDEX + MatrixComponents.true_negative.value])
+            tp_rate = self.stats_matrix[index][MatrixComponents.false_positive.value] \
+            / (self.stats_matrix[index][MatrixComponents.false_positive.value]
+            + self.stats_matrix[index][MatrixComponents.true_negative.value])
         return tp_rate
 
     def get_tp_rates(self):
@@ -161,12 +162,15 @@ class ConfusionMatrix:
             self.summarize()
         tp_rates = []
         for i in range(len(self.classifications)):
-            tp_rate = [self.classifications[i].name, self.get_tp_rate(i + SKIP_LABEL_INDEX)]
+            tp_rate = [self.classifications[i], self.get_tp_rate(i)]
             tp_rates.append(tp_rate)
         return tp_rates
 
     def get_tp_rate(self, index):
         return self.get_recall(index)
+
+    def get_summary(self):
+        return self.stats_matrix
 
 
 POSITIVE = 0
@@ -186,33 +190,52 @@ class RocConfusionMatrix:
     def print_summary(self):
         print_m(self.stats_matrix)
 
-    def add_entry(self, real_classification, classification, classification_probability, threshold):
-        if real_classification == classification and classification_probability >= threshold:
-            # either tp or tn
-            if real_classification == self.positive_class:
+    def add_entry(self, real_classification, positive_class_probability, threshold):
+        if positive_class_probability > threshold:
+            # asumo es clase roc
+            classification = self.positive_class
+            if real_classification == classification:
                 # tp
                 self.matrix[POSITIVE][POSITIVE] += 1
             else:
+                # fp (no puedo tener false negative porque estoy por arriba de umbral)
+                self.matrix[NEGATIVE][POSITIVE] += 1
+        else:
+            # no es clase roc
+            if real_classification != self.positive_class:
                 # tn
                 self.matrix[NEGATIVE][NEGATIVE] += 1
-        # if misclassified
-        elif real_classification != classification:
-            # either fp or fn
-            if real_classification == self.positive_class:
+            else:
                 # fn
                 self.matrix[POSITIVE][NEGATIVE] += 1
-            else:
-                # fp
-                self.matrix[NEGATIVE][POSITIVE] += 1
         self.entries += 1
+        return
+
+        # if real_classification == classification and classification_probability >= threshold:
+        #    # either tp or tn
+        #    if real_classification == self.positive_class:
+        #        # tp
+        #        self.matrix[POSITIVE][POSITIVE] += 1
+        #    else:
+        #        # tn
+        #        self.matrix[NEGATIVE][NEGATIVE] += 1
+        ## if misclassified
+        #elif real_classification != classification:
+        #    # either fp or fn
+        #    if real_classification == self.positive_class:
+        #        # fn
+        #        self.matrix[POSITIVE][NEGATIVE] += 1
+        #    else:
+        #        # fp
+        #        self.matrix[NEGATIVE][POSITIVE] += 1
+        # self.entries += 1
 
     def summarize(self):
-        stats_matrix = [[" ", "TP", "FP", "TN", "FN"], [0, 0, 0, 0]]
-        stats_matrix[SKIP_LABEL_INDEX][MatrixComponents.true_positive.value] = self.matrix[POSITIVE][POSITIVE]
-        stats_matrix[SKIP_LABEL_INDEX][MatrixComponents.false_positive.value] = self.matrix[NEGATIVE][POSITIVE]
-        stats_matrix[SKIP_LABEL_INDEX][MatrixComponents.false_negative.value] = self.matrix[POSITIVE][NEGATIVE]
-        stats_matrix[SKIP_LABEL_INDEX][MatrixComponents.true_negative.value] = self.matrix[NEGATIVE][NEGATIVE]
-        stats_matrix[SKIP_LABEL_INDEX].insert(0, self.positive_class)
+        stats_matrix = [0, 0, 0, 0]
+        stats_matrix[MatrixComponents.true_positive.value] = self.matrix[POSITIVE][POSITIVE]
+        stats_matrix[MatrixComponents.false_positive.value] = self.matrix[NEGATIVE][POSITIVE]
+        stats_matrix[MatrixComponents.false_negative.value] = self.matrix[POSITIVE][NEGATIVE]
+        stats_matrix[MatrixComponents.true_negative.value] = self.matrix[NEGATIVE][NEGATIVE]
         self.stats_matrix = stats_matrix
         return stats_matrix
 
@@ -262,8 +285,8 @@ class RocConfusionMatrix:
         return fp
 
     def get_roc_point(self):
-        x = self.get_tp_rate()
-        y = self.get_fp_rate()
+        y = self.get_tp_rate()
+        x = self.get_fp_rate()
         return x, y
 
 
